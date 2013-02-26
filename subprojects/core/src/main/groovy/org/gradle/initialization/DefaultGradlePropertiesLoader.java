@@ -25,6 +25,8 @@ import java.io.File;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
+import java.net.Authenticator;
+import java.net.PasswordAuthentication;
 
 /**
  * @author Hans Dockter
@@ -106,6 +108,22 @@ public class DefaultGradlePropertiesLoader implements IGradlePropertiesLoader {
         System.getProperties().putAll(properties);
         addSystemPropertiesFromGradleProperties(defaultProperties);
         addSystemPropertiesFromGradleProperties(overrideProperties);
+        // http://blog.vinodsingh.com/2008/05/proxy-authentication-in-java.html
+        // http://forums.gradle.org/gradle/topics/proxy_error-1r4f6
+        // https://issues.apache.org/jira/browse/HTTPCLIENT-1272
+        if (System.getProperty("http.proxyUser") != null) {
+            // manually set proxy authenticator if the http.proxyUser value is set
+            Authenticator.setDefault(new Authenticator() {
+                    // UsernamePasswordCrednentials
+            		@Override
+                    protected PasswordAuthentication getPasswordAuthentication() {
+                        return new PasswordAuthentication(
+                        	System.getProperty("http.proxyUser"),
+                            System.getProperty("http.proxyPassword", "").toCharArray());
+                    }
+                });
+        }
+        
     }
 
     private void addSystemPropertiesFromGradleProperties(Map<String, String> properties) {
